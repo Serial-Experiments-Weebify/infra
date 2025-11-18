@@ -8,7 +8,7 @@ sleep 5
 echo "Weebify minio init script"
 
 # set credentials
-mc alias set s3 http://s3:9000 $MINIO_ROOT_USER $MINIO_ROOT_PASSWORD
+mc alias set s3 http://minio:9000 $MINIO_ROOT_USER $MINIO_ROOT_PASSWORD
 sleep 1
 # check if bucket exists
 mc ls s3 --json | grep "\"key\":\"$WEEBIFY_CREATE_BUCKET\""

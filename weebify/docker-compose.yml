@@ -105,7 +105,7 @@ services:
       AUTH_JWT_KEY: ${JWT_KEY}
       DATABASE: mongodb://${DB_WEEBIFY_USERNAME}:${DB_WEEBIFY_PASSWORD}@mongo:27017/weebify?authMechanism=DEFAULT&authSource=admin
       SEARCH_HOST: http://meili:7700/
-      SEARCH_KEY: ${SEARCH_KEY}
+      SEARCH_KEY: ${MEILI_KEY}
       S3_PUBLIC_URL: https://${APP_DOMAIN}/s3/weebify
 
     restart: unless-stopped
@@ -135,7 +135,7 @@ services:
       S3_SECRET: ${S3_SECRET}
       S3_BUCKET: ${S3_BUCKET}
       SEARCH_HOST: http://meili:7700/
-      SEARCH_KEY: ${SEARCH_KEY}
+      SEARCH_KEY: ${MEILI_KEY}
       MONGO: mongodb://${DB_WEEBIFY_USERNAME}:${DB_WEEBIFY_PASSWORD}@mongo:27017/weebify?authMechanism=DEFAULT&authSource=admin
       AUTH_JWT_KEY: ${JWT_KEY}
 

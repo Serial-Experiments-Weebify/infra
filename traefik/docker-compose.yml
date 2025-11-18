@@ -2,7 +2,7 @@ name: traefik
 
 services:
   traefik:
-    image: traefik:v3.4
+    image: traefik:v3.6.1
     restart: unless-stopped
     networks:
       - proxy
@@ -33,7 +33,10 @@ services:
       - "443:443"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./letsencrypt:/letsencrypt
+      - letsencrypt:/letsencrypt
+
+volumes:
+  letsencrypt:
 
 networks:
     proxy:

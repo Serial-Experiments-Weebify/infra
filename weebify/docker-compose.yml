@@ -20,6 +20,9 @@ services:
       - 27017
 
     restart: unless-stopped
+    
+    networks:
+      - weebify
 
   meili:
     image: getmeili/meilisearch:v1.26
@@ -43,6 +46,10 @@ services:
       - "traefik.http.services.${TNS}-meili.loadbalancer.server.port=7700"
       - "traefik.http.middlewares.${TNS}-meili.stripPrefix.prefixes=/api/search"
       - "traefik.http.routers.${TNS}-meili.middlewares=${TNS}-meili"
+    
+    networks:
+      - weebify
+      - proxy
 
   minio:
     image: minio/minio
@@ -53,7 +60,6 @@ services:
 
     volumes:
       - media:/data
-      - ./minio/start.sh:/weebifyinit.sh
 
     environment:
       MINIO_ROOT_USER: ${S3_ACCESS_KEY}
@@ -66,11 +72,13 @@ services:
 
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.${TNS}-minio.rule=Host(`${APP_DOMAIN}`) && PathPrefix(`/s3`)"
+      - "traefik.http.routers.${TNS}-minio.rule=Host(`s3.${APP_DOMAIN}`)"
       - "traefik.http.routers.${TNS}-minio.entrypoints=websecure"
       - "traefik.http.services.${TNS}-minio.loadbalancer.server.port=9000"
-      - "traefik.http.middlewares.${TNS}-minio.stripPrefix.prefixes=/s3"
-      - "traefik.http.routers.${TNS}-minio.middlewares=${TNS}-minio"
+    
+    networks:
+      - weebify
+      - proxy
 
   minioinit:
     image: minio/mc
@@ -90,6 +98,9 @@ services:
       WEEBIFY_CREATE_BUCKET: ${S3_BUCKET}
 
     restart: no
+    
+    networks:
+      - weebify
 
   backend:
     image: ${IMG_PREFIX}-backend:${IMG_TAG}
@@ -106,7 +117,7 @@ services:
       DATABASE: mongodb://${DB_WEEBIFY_USERNAME}:${DB_WEEBIFY_PASSWORD}@mongo:27017/weebify?authMechanism=DEFAULT&authSource=admin
       SEARCH_HOST: http://meili:7700/
       SEARCH_KEY: ${MEILI_KEY}
-      S3_PUBLIC_URL: https://${APP_DOMAIN}/s3/weebify
+      S3_PUBLIC_URL: https://s3.${APP_DOMAIN}/${S3_BUCKET}
 
     restart: unless-stopped
 
@@ -115,6 +126,10 @@ services:
       - "traefik.http.routers.${TNS}-graphql.rule=Host(`${APP_DOMAIN}`) && PathPrefix(`/graphql`)"
       - "traefik.http.routers.${TNS}-graphql.entrypoints=websecure"
       - "traefik.http.services.${TNS}-graphql.loadbalancer.server.port=3000"
+    
+    networks:
+      - weebify
+      - proxy
 
   media:
     image: ${IMG_PREFIX}-media:${IMG_TAG}
@@ -128,9 +143,9 @@ services:
 
     environment:
       PORT: 3001
-      S3_PORT: 443
-      S3_ENDPOINT: "https://${APP_DOMAIN}/s3"
       S3_SSL: YES
+      S3_PORT: 443
+      S3_ENDPOINT: "s3.${APP_DOMAIN}"
       S3_ACCESS_KEY: ${S3_ACCESS_KEY}
       S3_SECRET: ${S3_SECRET}
       S3_BUCKET: ${S3_BUCKET}
@@ -146,8 +161,12 @@ services:
       - "traefik.http.routers.${TNS}-media.rule=Host(`${APP_DOMAIN}`) && PathPrefix(`/api/media`)"
       - "traefik.http.routers.${TNS}-media.entrypoints=websecure"
       - "traefik.http.services.${TNS}-media.loadbalancer.server.port=3001"
-      - "traefik.http.middlewares.${TNS}-media.stripPrefix.prefixes=/api/media"
+      - "traefik.http.middlewares.${TNS}-media.stripPrefix.prefixes=/api"
       - "traefik.http.routers.${TNS}-media.middlewares=${TNS}-media"
+    
+    networks:
+      - weebify
+      - proxy
 
   frontend:
     image: ${IMG_PREFIX}-frontend:${IMG_TAG}
@@ -166,8 +185,15 @@ services:
       - "traefik.http.routers.${TNS}-vue.rule=Host(`${APP_DOMAIN}`)"
       - "traefik.http.routers.${TNS}-vue.entrypoints=websecure"
       - "traefik.http.services.${TNS}-vue.loadbalancer.server.port=80"
+    
+    networks:
+      - weebify
+      - proxy
 
 networks:
+  weebify:
+    name: weebify
+
   proxy:
     name: proxy
     external: true

@@ -1,0 +1,178 @@
+name: weebify
+
+services:
+  mongo:
+    image: mongo:8.2.1
+
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${DB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      DB_WEEBIFY_USERNAME: ${DB_WEEBIFY_USERNAME}
+      DB_WEEBIFY_PASSWORD: ${DB_WEEBIFY_PASSWORD}
+      WEEBIFY_USER: ${WEEBIFY_USER}
+      WEEBIFY_PASSWORD_HASH: ${WEEBIFY_PASSWORD_HASH}
+
+    volumes:
+      - mongo-data:/data/db
+      - ./mongoinit.js:/docker-entrypoint-initdb.d/mongoinit.js
+    
+    expose:
+      - 27017
+
+    restart: unless-stopped
+
+  meili:
+    image: getmeili/meilisearch:v1.26
+
+    expose:
+      - 7700
+
+    environment:
+      MEILI_ENV: production
+      MEILI_MASTER_KEY: ${MEILI_KEY}
+
+    restart: unless-stopped
+
+    volumes:
+      - meili-data:/meili_data
+      
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.${TNS}-meili.rule=Host(`${APP_DOMAIN}`) && PathPrefix(`/api/search`)"
+      - "traefik.http.routers.${TNS}-meili.entrypoints=websecure"
+      - "traefik.http.services.${TNS}-meili.loadbalancer.server.port=7700"
+      - "traefik.http.middlewares.${TNS}-meili.stripPrefix.prefixes=/api/search"
+      - "traefik.http.routers.${TNS}-meili.middlewares=${TNS}-meili"
+
+  minio:
+    image: minio/minio
+
+    expose:
+      - 9000
+      - 9001
+
+    volumes:
+      - media:/data
+      - ./minio/start.sh:/weebifyinit.sh
+
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET}
+      WEEBIFY_CREATE_BUCKET: ${S3_BUCKET}
+
+    command: server --console-address ":9001" /data
+    
+    restart: unless-stopped
+
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.${TNS}-minio.rule=Host(`${APP_DOMAIN}`) && PathPrefix(`/s3`)"
+      - "traefik.http.routers.${TNS}-minio.entrypoints=websecure"
+      - "traefik.http.services.${TNS}-minio.loadbalancer.server.port=9000"
+      - "traefik.http.middlewares.${TNS}-minio.stripPrefix.prefixes=/s3"
+      - "traefik.http.routers.${TNS}-minio.middlewares=${TNS}-minio"
+
+  minioinit:
+    image: minio/mc
+
+    depends_on:
+      - minio
+
+    volumes:
+      - ./minioinit.sh:/minioinit.sh
+
+    entrypoint: sh
+    command: /minioinit.sh
+
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET}
+      WEEBIFY_CREATE_BUCKET: ${S3_BUCKET}
+
+    restart: no
+
+  backend:
+    image: ${IMG_PREFIX}-backend:${IMG_TAG}
+
+    expose:
+      - 3000
+
+    depends_on:
+      - mongo
+      - meili
+
+    environment:
+      AUTH_JWT_KEY: ${JWT_KEY}
+      DATABASE: mongodb://${DB_WEEBIFY_USERNAME}:${DB_WEEBIFY_PASSWORD}@mongo:27017/weebify?authMechanism=DEFAULT&authSource=admin
+      SEARCH_HOST: http://meili:7700/
+      SEARCH_KEY: ${SEARCH_KEY}
+      S3_PUBLIC_URL: https://${APP_DOMAIN}/s3/weebify
+
+    restart: unless-stopped
+
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.${TNS}-graphql.rule=Host(`${APP_DOMAIN}`) && PathPrefix(`/graphql`)"
+      - "traefik.http.routers.${TNS}-graphql.entrypoints=websecure"
+      - "traefik.http.services.${TNS}-graphql.loadbalancer.server.port=3000"
+
+  media:
+    image: ${IMG_PREFIX}-media:${IMG_TAG}
+
+    expose:
+      - 3001
+
+    depends_on:
+      - minio
+      - mongo
+
+    environment:
+      PORT: 3001
+      S3_PORT: 443
+      S3_ENDPOINT: "https://${APP_DOMAIN}/s3"
+      S3_SSL: YES
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY}
+      S3_SECRET: ${S3_SECRET}
+      S3_BUCKET: ${S3_BUCKET}
+      SEARCH_HOST: http://meili:7700/
+      SEARCH_KEY: ${SEARCH_KEY}
+      MONGO: mongodb://${DB_WEEBIFY_USERNAME}:${DB_WEEBIFY_PASSWORD}@mongo:27017/weebify?authMechanism=DEFAULT&authSource=admin
+      AUTH_JWT_KEY: ${JWT_KEY}
+
+    restart: unless-stopped
+
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.${TNS}-media.rule=Host(`${APP_DOMAIN}`) && PathPrefix(`/api/media`)"
+      - "traefik.http.routers.${TNS}-media.entrypoints=websecure"
+      - "traefik.http.services.${TNS}-media.loadbalancer.server.port=3001"
+      - "traefik.http.middlewares.${TNS}-media.stripPrefix.prefixes=/api/media"
+      - "traefik.http.routers.${TNS}-media.middlewares=${TNS}-media"
+
+  frontend:
+    image: ${IMG_PREFIX}-frontend:${IMG_TAG}
+
+    restart: unless-stopped
+
+    depends_on:
+      - meili
+      - backend
+      - minio
+      - media
+
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.${TNS}-vue.priority=1"
+      - "traefik.http.routers.${TNS}-vue.rule=Host(`${APP_DOMAIN}`)"
+      - "traefik.http.routers.${TNS}-vue.entrypoints=websecure"
+      - "traefik.http.services.${TNS}-vue.loadbalancer.server.port=80"
+
+networks:
+  proxy:
+    name: proxy
+    external: true
+
+volumes:
+  mongo-data:
+  meili-data:
+  media:

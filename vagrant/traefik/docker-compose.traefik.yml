@@ -1,0 +1,27 @@
+name: traefik
+
+services:
+  traefik:
+    image: traefik:v3.6.1
+    restart: unless-stopped
+    networks:
+      - proxy
+    command:
+      # Providers
+      - --providers.docker
+      - --providers.docker.exposedbydefault=false
+      - --providers.docker.network=proxy
+
+      # Entrypoints
+      - --entrypoints.web.address=:80
+
+      # Observability
+      - --log.level=INFO
+    ports:
+      - "80:80"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+networks:
+    proxy:
+        name: proxy

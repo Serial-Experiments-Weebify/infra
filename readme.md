@@ -1,40 +1,27 @@
-# Docker quick deploy
+# Infra VM
 
-## Prerequisites
-- Docker
-- public IP or port forwarding for 80/443
-- domain name you control
+## Multipass deploy
 
-## DNS
-- Point your app domain (can be anything) and it's `s3` subdomain to the server.
-    - (e.g. `test.weebify.tv` and `s3.test.weebify.tv`)
+1. Make sure you have `multipass`, `caddy` and `make` installed.
 
-## Environment files
-- Copy each `.env.example` to `.env` in the same directory and edit values (domain, credentials, AWS/S3 settings, etc).
-        - `cp ./traefik/.env.example ./traefik/.env`
-        - `cp ./weebify/.env.example ./weebify/.env`
-- Confirm the configured domain(s) in these files match your DNS records.
+2. Apply the weebnet.yaml with `netplan` (copy to `/etc/netplan/` first).
 
-## Startup
-1. cd into `traefik` and run:
-     - `docker compose up -d`
-2. cd into `weebify` and run:
-     - `docker compose up`
-     - wait untill things settle (make sure s3init and mongo don't fail)
-     - stop the stack (CTRL+C) and run with `-d` to background
+3. Copy `Caddyfile` to `/etc/caddy/Caddyfile` (modify domains if needed) and start Caddy (`systemctl enable --now caddy`).
 
-## Profit?
+4. Copy & modify the .env file in `./multipass/files/` as needed.
 
-To check that everything is working:
+5. Run `make up` from `./multipass/`.
 
-- Open configured domain in browser
-- Login with configured admin user
-- Rebuild search indices and generate an API key
-- Create a show/movie
-- Upload a cover image (and set your PFP)
-- Try uploading a video using [encodeher](https://github.com/Serial-experiments-weebify/encodeher).
-- Link the video to an episode & try playing it back
+6. profit???
 
-# Troubleshooting
+## Vagrant deploy
 
-Good Luck!
+1. Make sure you have `vagrant`, `virtualbox`, `caddy` installed.
+
+2. Copy `Caddyfile` to `/etc/caddy/Caddyfile` (modify domains if needed) and start Caddy (`systemctl enable --now caddy`).
+
+3. Copy & modify the .env file in `./vagrant/weebify/` as needed.
+
+4. Run `vagrant up` from `./vagrant/`.
+
+5. profit???

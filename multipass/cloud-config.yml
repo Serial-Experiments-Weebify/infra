@@ -1,0 +1,77 @@
+#cloud-config
+
+# Add Docker repo
+apt:
+  sources:
+    docker.list:
+      source: deb [arch=amd64] https://download.docker.com/linux/ubuntu $RELEASE stable
+      keyid: 9DC858229FC7DD38854AE2D88D81803C0EBFCD88
+
+# Install Docker
+packages:
+  - docker-ce
+  - docker-ce-cli
+  - containerd.io
+
+write_files:
+  - path: /home/ubuntu/dockerup.sh
+    content: |
+      ##include files/dockerup.sh
+
+  - path: /etc/netplan/60-fucking-static-ip.yaml
+    content: |
+      network:
+        version: 2
+        ethernets:
+          ens4:
+            dhcp4: false
+            addresses:
+              - 10.67.67.67/24
+            
+            nameservers:
+              addresses: [8.8.8.8, 1.1.1.1]
+
+  # Traefik docker-compose file
+  - path: /home/ubuntu/traefik/docker-compose.yml
+    content: |
+      ##include files/docker-compose.traefik.yml
+  
+  # Weebify docker-compose file
+  - path: /home/ubuntu/weebify/docker-compose.yml
+    content: |
+      ##include files/docker-compose.weebify.yml
+  
+  # Weebify .env
+  - path: /home/ubuntu/weebify/.env
+    content: |
+      ##include files/.env.weebify
+
+  # Weebify minioinit
+  - path: /home/ubuntu/weebify/minioinit.sh
+    content: |
+      ##include files/minioinit.sh
+
+  # Weebify mongoinit
+  - path: /home/ubuntu/weebify/mongoinit.js
+    content: |
+      ##include files/mongoinit.js
+
+# Create the docker group
+groups:
+  - docker
+
+# Add default auto created user to docker group
+system_info:
+  default_user:
+    groups: [docker]
+
+# Enable and start docker service
+runcmd:
+  - netplan apply
+  - bash /home/ubuntu/dockerup.sh
+  - docker compose -f /home/ubuntu/traefik/docker-compose.yml --progress quiet up -d
+  - docker compose --env-file /home/ubuntu/weebify/.env -f /home/ubuntu/weebify/docker-compose.yml --progress quiet up -d
+  - sleep 10
+  - docker compose --env-file /home/ubuntu/weebify/.env -f /home/ubuntu/weebify/docker-compose.yml --progress quiet restart #lol
+  - touch /home/ubuntu/IFUCKINGHATEVIRTUALMACHINES
+  

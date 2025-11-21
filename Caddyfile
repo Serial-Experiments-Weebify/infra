@@ -1,0 +1,23 @@
+multipass.devops.weebify.tv {
+	reverse_proxy 10.67.67.67 {
+		header_up Host {http.request.host}
+	}
+}
+
+s3.multipass.devops.weebify.tv {
+	reverse_proxy 10.67.67.67 {
+		header_up Host {http.request.host}
+	}
+}
+
+vagrant.devops.weebify.tv {
+	reverse_proxy :8080 {
+		header_up Host {http.request.host}
+	}
+}
+
+s3.vagrant.devops.weebify.tv {
+	reverse_proxy :8080 {
+		header_up Host {http.request.host}
+	}
+}

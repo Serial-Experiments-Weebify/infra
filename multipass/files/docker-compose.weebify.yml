@@ -42,7 +42,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.${TNS}-meili.rule=Host(`${APP_DOMAIN}`) && PathPrefix(`/api/search`)"
-      - "traefik.http.routers.${TNS}-meili.entrypoints=websecure"
+      - "traefik.http.routers.${TNS}-meili.entrypoints=web"
       - "traefik.http.services.${TNS}-meili.loadbalancer.server.port=7700"
       - "traefik.http.middlewares.${TNS}-meili.stripPrefix.prefixes=/api/search"
       - "traefik.http.routers.${TNS}-meili.middlewares=${TNS}-meili"
@@ -73,7 +73,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.${TNS}-minio.rule=Host(`s3.${APP_DOMAIN}`)"
-      - "traefik.http.routers.${TNS}-minio.entrypoints=websecure"
+      - "traefik.http.routers.${TNS}-minio.entrypoints=web"
       - "traefik.http.services.${TNS}-minio.loadbalancer.server.port=9000"
     
     networks:
@@ -124,7 +124,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.${TNS}-graphql.rule=Host(`${APP_DOMAIN}`) && PathPrefix(`/graphql`)"
-      - "traefik.http.routers.${TNS}-graphql.entrypoints=websecure"
+      - "traefik.http.routers.${TNS}-graphql.entrypoints=web"
       - "traefik.http.services.${TNS}-graphql.loadbalancer.server.port=3000"
     
     networks:
@@ -159,7 +159,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.${TNS}-media.rule=Host(`${APP_DOMAIN}`) && PathPrefix(`/api/media`)"
-      - "traefik.http.routers.${TNS}-media.entrypoints=websecure"
+      - "traefik.http.routers.${TNS}-media.entrypoints=web"
       - "traefik.http.services.${TNS}-media.loadbalancer.server.port=3001"
       - "traefik.http.middlewares.${TNS}-media.stripPrefix.prefixes=/api"
       - "traefik.http.routers.${TNS}-media.middlewares=${TNS}-media"
@@ -183,7 +183,7 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.${TNS}-vue.priority=1"
       - "traefik.http.routers.${TNS}-vue.rule=Host(`${APP_DOMAIN}`)"
-      - "traefik.http.routers.${TNS}-vue.entrypoints=websecure"
+      - "traefik.http.routers.${TNS}-vue.entrypoints=web"
       - "traefik.http.services.${TNS}-vue.loadbalancer.server.port=80"
     
     networks:

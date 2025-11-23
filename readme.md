@@ -30,7 +30,7 @@ cd infra-vm
 Add yourself to the `libvirt` group...
 
 ```bash
-sudo usrmod -aG libvirt $USER
+sudo usermod -aG libvirt $USER
 ```
 
 Install Vagrant...

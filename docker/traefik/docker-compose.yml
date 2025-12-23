@@ -1,0 +1,43 @@
+name: traefik
+
+services:
+  traefik:
+    image: traefik:v3.6.1
+    restart: unless-stopped
+    networks:
+      - proxy
+    command:
+      # Providers
+      - --providers.docker
+      - --providers.docker.exposedbydefault=false
+      - --providers.docker.network=proxy
+
+      # Entrypoints
+      - --entrypoints.websecure.address=:443
+      - --entrypoints.websecure.http.tls=true
+      - --entrypoints.web.address=:80
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      - --entrypoints.web.http.redirections.entrypoint.permanent=true
+
+      # Observability
+      - --log.level=INFO
+
+      # Certs
+      - --certificatesresolvers.le.acme.email=${LE_EMAIL}
+      - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json
+      - --certificatesresolvers.le.acme.httpchallenge.entrypoint=web
+      - --entrypoints.websecure.http.tls.certresolver=le
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - letsencrypt:/letsencrypt
+
+networks:
+    proxy:
+        name: proxy
+
+volumes:
+    letsencrypt:

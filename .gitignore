@@ -3,3 +3,5 @@
 .env.traefik
 cloud-config.out.yml
 .vagrant
+
+docker/weebify/secrets/*.txt
